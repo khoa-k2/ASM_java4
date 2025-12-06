@@ -85,6 +85,17 @@ public class VideoDAOImpl implements VideoDAO{
 	    }
 
 	 
+	    public int countAll() {
+	        EntityManager em = XJpa.getEntityManager();
+	        try {
+	            Long total = em.createQuery("SELECT COUNT(v) FROM Video v", Long.class)
+	                           .getSingleResult();
+	            return total.intValue();
+	        } finally {
+	            em.close();
+	        }
+	    }
+	    
 	    public long countVideos() {
 	        EntityManager em = XJpa.getEntityManager();
 	        try {
@@ -94,6 +105,40 @@ public class VideoDAOImpl implements VideoDAO{
 	        }
 	    }
 
+	 // Tìm video theo từ khóa trong title
+	    public List<Object[]> searchByKeyword(String keyword) {
+	    	EntityManager em = XJpa.getEntityManager();
+	        String jpql = """
+	            SELECT v.title, COUNT(f.id)
+	            FROM Video v LEFT JOIN v.favorites f
+	            WHERE v.title LIKE :kw
+	            GROUP BY v.id, v.title
+	            ORDER BY v.title
+	        """;
+
+	        TypedQuery<Object[]> query = em.createQuery(jpql, Object[].class);
+	        query.setParameter("kw", "%" + keyword + "%");
+
+	        return query.getResultList();
+	    }
 		
+	    //tăng views
+	    public void increaseView(String id) {
+	        EntityManager em = XJpa.getEntityManager();
+	        try {
+	            em.getTransaction().begin();
+
+	            em.createQuery("UPDATE Video v SET v.views = v.views + 1 WHERE v.id = :id")
+	              .setParameter("id", id)
+	              .executeUpdate();
+
+	            em.getTransaction().commit();
+	        } catch (Exception e) {
+	            em.getTransaction().rollback();
+	            e.printStackTrace();
+	        } finally {
+	            em.close();
+	        }
+	    }
 
 }

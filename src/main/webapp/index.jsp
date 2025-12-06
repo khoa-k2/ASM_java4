@@ -1,7 +1,10 @@
+
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
+
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions"%>
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,8 +12,11 @@
 <title>Trang chủ Video</title>
 <link rel="stylesheet"
 	href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<script
+	src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
+
 	<!-- Navbar -->
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 		<div class="container-fluid">
@@ -24,19 +30,20 @@
 			</button>
 			<div class="collapse navbar-collapse" id="navbarNav">
 				<ul class="navbar-nav ms-auto">
-				
-				<li class="nav-item"><a class="nav-link"
-						href="${pageContext.request.contextPath}/home.jsp">Trang Chủ</a>
-					</li>
+
+					<li class="nav-item"><a class="nav-link"
+						href="${pageContext.request.contextPath}/home">Trang Chủ</a></li>
 					<li class="nav-item"><a class="nav-link"
 						href="${pageContext.request.contextPath}/about.jsp">Giới thiệu</a>
 					</li>
 					<li class="nav-item"><a class="nav-link"
-						href="${pageContext.request.contextPath}/login.jsp">Video yêu
+						href="${pageContext.request.contextPath}/favorite">Video yêu
 							thích</a></li>
 					<li class="nav-item"><a class="nav-link"
-						href="${pageContext.request.contextPath}/login.jsp">Đăng
-							nhập</a></li>
+						href="${pageContext.request.contextPath}/manager">Quản lý
+							Video</a></li>
+					<li class="nav-item"><a class="nav-link"
+						href="${pageContext.request.contextPath}/login">Đăng nhập</a></li>
 				</ul>
 			</div>
 		</div>
@@ -51,6 +58,7 @@
 						<%-- <img src="${video.poster}" class="card-img-top" style="cursor:pointer"
                          onclick="location.href='videoDetail?id=${video.id}'">  --%>
 						<c:set var="videoId" value="${fn:substringAfter(video.link,'v=')}" />
+
 						<iframe width="100%" height="200"
 							src="https://www.youtube.com/embed/${videoId}"
 							title="${video.title}" frameborder="0"
@@ -58,9 +66,22 @@
 							allowfullscreen></iframe>
 
 						<div class="card-body">
-							<h5 class="card-title">${video.title}</h5>
-							<button class="btn btn-primary" onclick="likeVideo(${video.id})">Like</button>
-							<button class="btn btn-success" onclick="shareVideo(${video.id})">Share</button>
+							<a href="video/view?id=${video.id} "><h5 class="card-title">${video.title}</h5></a>
+
+							<p class="text-muted mb-2">
+								❤️ Views: <strong>${video.views}</strong>
+							</p>
+							
+							
+							<c:if test="${not empty sessionScope.user}">
+								<c:set var="videoId" value="${video.id}" />
+								<button class="btn btn-primary"
+									onclick="shareVideo('${video.id}')">Share</button>
+							</c:if>
+							<c:if test="${empty sessionScope.user}">
+								<a href="login.jsp"><button class="btn btn-secondary">Login
+										để share</button></a>
+							</c:if>
 						</div>
 					</div>
 				</div>
@@ -89,19 +110,42 @@
 			</ul>
 		</nav>
 	</div>
-
+	<!-- <!-- Share Modal -->
 	<script>
-function likeVideo(videoId){
-    alert("Like video: " + videoId);
-    // Gọi AJAX gửi request lên Servlet xử lý Like
-}
+function shareVideo(videoId) {
+    fetch(`video/share?id=${videoId}`)
+        .then(res => res.text()) // đọc raw text trước
+        .then(text => {
+            if(!text) throw new Error("Empty response");
+            const data = JSON.parse(text); // parse JSON an toàn
+            if(data.status === 'success'){
+                const shareUrl = window.location.origin + "/ASM_JAVA4/videoDetail?id=" + videoId;
+                const message = `
+Chia sẻ video qua:
+1. Facebook
+2. Twitter
+3. Copy link
+                `;
+                const choice = prompt(message + "\nNhập 1, 2 hoặc 3:");
 
-function shareVideo(videoId){
-    let email = prompt("Nhập email bạn muốn chia sẻ:");
-    if(email){
-        alert("Đã gửi link video " + videoId + " đến " + email);
-        // Gọi AJAX gửi request lên Servlet xử lý Share
-    }
+                if(choice === '1'){
+                    window.open(
+                        "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl),
+                        "Share","width=600,height=400");
+                } else if(choice === '2'){
+                    window.open(
+                        "https://twitter.com/intent/tweet?url=" + encodeURIComponent(shareUrl),
+                        "Share","width=600,height=400");
+                } else if(choice === '3'){
+                    navigator.clipboard.writeText(shareUrl)
+                        .then(() => alert("Link đã được copy!"))
+                        .catch(err => alert("Copy thất bại: " + err));
+                }
+            } else {
+                alert(data.message); // thông báo lỗi (chưa login hoặc video không tồn tại)
+            }
+        })
+        .catch(err => console.error("Lỗi fetch shareVideo:", err));
 }
 </script>
 </body>

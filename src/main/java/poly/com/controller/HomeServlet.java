@@ -11,7 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import poly.com.dao.VideoDAOImpl;
 import poly.com.model.Video;
 
-@WebServlet("/home")
+@WebServlet({"/","/home"})
 public class HomeServlet extends HttpServlet {
 	VideoDAOImpl VideoDAO = new VideoDAOImpl();
 
